@@ -10,7 +10,6 @@ package i2c
 
 import (
 	"encoding/hex"
-	"fmt"
 	"os"
 	"syscall"
 
@@ -20,7 +19,7 @@ import (
 // Options represents a connection to I2C-device.
 type Options struct {
 	addr uint8
-	bus  int
+	dev  string
 	rc   *os.File
 	Log  *logrus.Logger
 }
@@ -30,28 +29,27 @@ type Options struct {
 // supported as well: you should preliminary specify
 // register address to read from, either write register
 // together with the data in case of write operations.
-func New(addr uint8, bus int) (*Options, error) {
-	v := &Options{
+func New(addr uint8, dev string) (*Options, error) {
+	i2c := &Options{
 		addr: addr,
-		bus:  bus,
+		dev:  "/dev/i2c-0",
 		Log:  logrus.New(),
 	}
 
-	f, err := os.OpenFile(fmt.Sprintf("/dev/i2c-%d", bus), os.O_RDWR, 0600)
+	if dev != "" {
+		i2c.dev = dev
+	}
+
+	f, err := os.OpenFile(dev, os.O_RDWR, 0600)
 	if err != nil {
-		return v, err
+		return i2c, err
 	}
 	if err := ioctl(f.Fd(), I2C_SLAVE, uintptr(addr)); err != nil {
-		return v, err
+		return i2c, err
 	}
 
-	v.rc = f
-	return v, nil
-}
-
-// GetBus return bus line, where I2C-device is allocated.
-func (o *Options) GetBus() int {
-	return o.bus
+	i2c.rc = f
+	return i2c, nil
 }
 
 // GetAddr return device occupied address in the bus.
@@ -92,12 +90,10 @@ func (o *Options) Close() error {
 
 // ReadRegBytes read count of n byte's sequence from I2C-device
 // starting from reg address.
-// SMBus (System Management Bus) protocol over I2C.
 func (o *Options) ReadRegBytes(reg byte, n int) ([]byte, int, error) {
 	o.Log.Debugf("Read %d bytes starting from reg 0x%0X...", n, reg)
 	_, err := o.WriteBytes([]byte{reg})
 	if err != nil {
-
 		return nil, 0, err
 	}
 	buf := make([]byte, n)
@@ -110,7 +106,6 @@ func (o *Options) ReadRegBytes(reg byte, n int) ([]byte, int, error) {
 }
 
 // ReadRegU8 reads byte from I2C-device register specified in reg.
-// SMBus (System Management Bus) protocol over I2C.
 func (o *Options) ReadRegU8(reg byte) (byte, error) {
 	_, err := o.WriteBytes([]byte{reg})
 	if err != nil {
@@ -126,7 +121,6 @@ func (o *Options) ReadRegU8(reg byte) (byte, error) {
 }
 
 // WriteRegU8 writes byte to I2C-device register specified in reg.
-// SMBus (System Management Bus) protocol over I2C.
 func (o *Options) WriteRegU8(reg byte, value byte) error {
 	buf := []byte{reg, value}
 	_, err := o.WriteBytes(buf)
@@ -139,7 +133,6 @@ func (o *Options) WriteRegU8(reg byte, value byte) error {
 
 // ReadRegU16BE reads unsigned big endian word (16 bits)
 // from I2C-device starting from address specified in reg.
-// SMBus (System Management Bus) protocol over I2C.
 func (o *Options) ReadRegU16BE(reg byte) (uint16, error) {
 	_, err := o.WriteBytes([]byte{reg})
 	if err != nil {
@@ -157,7 +150,6 @@ func (o *Options) ReadRegU16BE(reg byte) (uint16, error) {
 
 // ReadRegU16LE reads unsigned little endian word (16 bits)
 // from I2C-device starting from address specified in reg.
-// SMBus (System Management Bus) protocol over I2C.
 func (o *Options) ReadRegU16LE(reg byte) (uint16, error) {
 	w, err := o.ReadRegU16BE(reg)
 	if err != nil {
@@ -170,7 +162,6 @@ func (o *Options) ReadRegU16LE(reg byte) (uint16, error) {
 
 // ReadRegS16BE reads signed big endian word (16 bits)
 // from I2C-device starting from address specified in reg.
-// SMBus (System Management Bus) protocol over I2C.
 func (o *Options) ReadRegS16BE(reg byte) (int16, error) {
 	_, err := o.WriteBytes([]byte{reg})
 	if err != nil {
@@ -188,7 +179,6 @@ func (o *Options) ReadRegS16BE(reg byte) (int16, error) {
 
 // ReadRegS16LE reads signed little endian word (16 bits)
 // from I2C-device starting from address specified in reg.
-// SMBus (System Management Bus) protocol over I2C.
 func (o *Options) ReadRegS16LE(reg byte) (int16, error) {
 	w, err := o.ReadRegS16BE(reg)
 	if err != nil {
@@ -202,7 +192,6 @@ func (o *Options) ReadRegS16LE(reg byte) (int16, error) {
 
 // WriteRegU16BE writes unsigned big endian word (16 bits)
 // value to I2C-device starting from address specified in reg.
-// SMBus (System Management Bus) protocol over I2C.
 func (o *Options) WriteRegU16BE(reg byte, value uint16) error {
 	buf := []byte{reg, byte((value & 0xFF00) >> 8), byte(value & 0xFF)}
 	_, err := o.WriteBytes(buf)
@@ -215,7 +204,6 @@ func (o *Options) WriteRegU16BE(reg byte, value uint16) error {
 
 // WriteRegU16LE writes unsigned little endian word (16 bits)
 // value to I2C-device starting from address specified in reg.
-// SMBus (System Management Bus) protocol over I2C.
 func (o *Options) WriteRegU16LE(reg byte, value uint16) error {
 	w := (value*0xFF00)>>8 + value<<8
 	return o.WriteRegU16BE(reg, w)
@@ -223,7 +211,6 @@ func (o *Options) WriteRegU16LE(reg byte, value uint16) error {
 
 // WriteRegS16BE writes signed big endian word (16 bits)
 // value to I2C-device starting from address specified in reg.
-// SMBus (System Management Bus) protocol over I2C.
 func (o *Options) WriteRegS16BE(reg byte, value int16) error {
 	buf := []byte{reg, byte((uint16(value) & 0xFF00) >> 8), byte(value & 0xFF)}
 	_, err := o.WriteBytes(buf)
@@ -236,7 +223,6 @@ func (o *Options) WriteRegS16BE(reg byte, value int16) error {
 
 // WriteRegS16LE writes signed little endian word (16 bits)
 // value to I2C-device starting from address specified in reg.
-// SMBus (System Management Bus) protocol over I2C.
 func (o *Options) WriteRegS16LE(reg byte, value int16) error {
 	w := int16((uint16(value)*0xFF00)>>8) + value<<8
 	return o.WriteRegS16BE(reg, w)
