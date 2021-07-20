@@ -57,6 +57,11 @@ func (o *Options) GetAddr() uint8 {
 	return o.addr
 }
 
+// GetDev return full device name.
+func (o *Options) GetDev() string {
+	return o.dev
+}
+
 func (o *Options) write(buf []byte) (int, error) {
 	return o.rc.Write(buf)
 }
