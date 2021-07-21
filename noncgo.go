@@ -1,5 +1,4 @@
 // +build !cgo
-
 package i2c
 
 // Use hard-coded value for system I2C_SLAVE

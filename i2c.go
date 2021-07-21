@@ -62,14 +62,12 @@ func (o *Options) GetDev() string {
 	return o.dev
 }
 
-func (o *Options) read(buf []byte) (int, error) {
-	return o.rc.Read(buf)
-}
+// READ SECTION
 
 // ReadBytes read bytes from I2C-device.
 // Number of bytes read correspond to buf parameter length.
 func (o *Options) ReadBytes(buf []byte) (int, error) {
-	n, err := o.read(buf)
+	n, err := o.rc.Read(buf)
 	if err != nil {
 		return n, err
 	}
@@ -166,15 +164,13 @@ func (o *Options) ReadRegS16LE(reg byte) (int16, error) {
 	return w, nil
 }
 
-func (o *Options) write(buf []byte) (int, error) {
-	return o.rc.Write(buf)
-}
+// WRITE SECTION
 
 // WriteBytes send bytes to the remote I2C-device. The interpretation of
 // the message is implementation-dependent.
 func (o *Options) WriteBytes(buf []byte) (int, error) {
 	o.Log.Debugf("Write %d hex bytes: [%+v]", len(buf), hex.EncodeToString(buf))
-	return o.write(buf)
+	return o.rc.Write(buf)
 }
 
 // WriteRegU8 writes byte to I2C-device register specified in reg.
