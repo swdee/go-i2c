@@ -17,8 +17,8 @@ Golang usage
 
 ```go
 func main() {
-  // Create new connection to I2C bus on 2 line with address 0x27
-  i2cDevice, err := i2c.New(0x27, 2)
+  // Create new connection to I2C dev on /dev/i2c-0 with address 0x27
+  i2cDevice, err := i2c.New(0x27, "/dev/i2c-0")
   if err != nil { 
       i2cDevice.Log.Fatal(err)
   }
