@@ -79,8 +79,7 @@ func (o *Options) ReadBytes(buf []byte) (int, error) {
 // starting from reg address.
 func (o *Options) ReadRegBytes(reg byte, n int) ([]byte, int, error) {
 	o.Log.Debugf("Read %d bytes starting from reg 0x%0X...", n, reg)
-	_, err := o.WriteBytes([]byte{reg})
-	if err != nil {
+	if _, err := o.WriteBytes([]byte{reg}); err != nil {
 		return nil, 0, err
 	}
 	buf := make([]byte, n)
@@ -93,13 +92,11 @@ func (o *Options) ReadRegBytes(reg byte, n int) ([]byte, int, error) {
 
 // ReadRegU8 reads byte from I2C-device register specified in reg.
 func (o *Options) ReadRegU8(reg byte) (byte, error) {
-	_, err := o.WriteBytes([]byte{reg})
-	if err != nil {
+	if _, err := o.WriteBytes([]byte{reg}); err != nil {
 		return 0, err
 	}
 	buf := make([]byte, 1)
-	_, err = o.ReadBytes(buf)
-	if err != nil {
+	if _, err := o.ReadBytes(buf); err != nil {
 		return 0, err
 	}
 	o.Log.Debugf("Read U8 %d from reg 0x%0X", buf[0], reg)
@@ -109,13 +106,11 @@ func (o *Options) ReadRegU8(reg byte) (byte, error) {
 // ReadRegU16BE reads unsigned big endian word (16 bits)
 // from I2C-device starting from address specified in reg.
 func (o *Options) ReadRegU16BE(reg byte) (uint16, error) {
-	_, err := o.WriteBytes([]byte{reg})
-	if err != nil {
+	if _, err := o.WriteBytes([]byte{reg}); err != nil {
 		return 0, err
 	}
 	buf := make([]byte, 2)
-	_, err = o.ReadBytes(buf)
-	if err != nil {
+	if _, err := o.ReadBytes(buf); err != nil {
 		return 0, err
 	}
 	w := uint16(buf[0])<<8 + uint16(buf[1])
@@ -138,13 +133,11 @@ func (o *Options) ReadRegU16LE(reg byte) (uint16, error) {
 // ReadRegS16BE reads signed big endian word (16 bits)
 // from I2C-device starting from address specified in reg.
 func (o *Options) ReadRegS16BE(reg byte) (int16, error) {
-	_, err := o.WriteBytes([]byte{reg})
-	if err != nil {
+	if _, err := o.WriteBytes([]byte{reg}); err != nil {
 		return 0, err
 	}
 	buf := make([]byte, 2)
-	_, err = o.ReadBytes(buf)
-	if err != nil {
+	if _, err := o.ReadBytes(buf); err != nil {
 		return 0, err
 	}
 	w := int16(buf[0])<<8 + int16(buf[1])
@@ -176,8 +169,7 @@ func (o *Options) WriteBytes(buf []byte) (int, error) {
 // WriteRegU8 writes byte to I2C-device register specified in reg.
 func (o *Options) WriteRegU8(reg byte, value byte) error {
 	buf := []byte{reg, value}
-	_, err := o.WriteBytes(buf)
-	if err != nil {
+	if _, err := o.WriteBytes(buf); err != nil {
 		return err
 	}
 	o.Log.Debugf("Write U8 %d to reg 0x%0X", value, reg)
@@ -188,8 +180,7 @@ func (o *Options) WriteRegU8(reg byte, value byte) error {
 // value to I2C-device starting from address specified in reg.
 func (o *Options) WriteRegU16BE(reg byte, value uint16) error {
 	buf := []byte{reg, byte((value & 0xFF00) >> 8), byte(value & 0xFF)}
-	_, err := o.WriteBytes(buf)
-	if err != nil {
+	if _, err := o.WriteBytes(buf); err != nil {
 		return err
 	}
 	o.Log.Debugf("Write U16 %d to reg 0x%0X", value, reg)
@@ -207,8 +198,7 @@ func (o *Options) WriteRegU16LE(reg byte, value uint16) error {
 // value to I2C-device starting from address specified in reg.
 func (o *Options) WriteRegS16BE(reg byte, value int16) error {
 	buf := []byte{reg, byte((uint16(value) & 0xFF00) >> 8), byte(value & 0xFF)}
-	_, err := o.WriteBytes(buf)
-	if err != nil {
+	if _, err := o.WriteBytes(buf); err != nil {
 		return err
 	}
 	o.Log.Debugf("Write S16 %d to reg 0x%0X", value, reg)
@@ -222,14 +212,35 @@ func (o *Options) WriteRegS16LE(reg byte, value int16) error {
 	return o.WriteRegS16BE(reg, w)
 }
 
+// WriteRegU24BE writes unsigned big endian word (24 bits)
+// value to I2C-device starting from address specified in reg.
+func (v *Options) WriteRegU24BE(reg byte, value uint32) error {
+	buf := []byte{reg, byte(value >> 16 & 0xFF), byte(value >> 8 & 0xFF), byte(value & 0xFF)}
+	if _, err := v.WriteBytes(buf); err != nil {
+		return err
+	}
+	v.Log.Debugf("Write U24 %d to reg 0x%0X", value, reg)
+	return nil
+}
+
+// WriteRegU32BE writes unsigned big endian word (32 bits)
+// value to I2C-device starting from address specified in reg.
+func (v *Options) WriteRegU32BE(reg byte, value uint32) error {
+	buf := []byte{reg, byte(value >> 24 & 0xFF), byte(value >> 16 & 0xFF), byte(value >> 8 & 0xFF), byte(value & 0xFF)}
+	if _, err := v.WriteBytes(buf); err != nil {
+		return err
+	}
+	v.Log.Debugf("Write U32 %d to reg 0x%0X", value, reg)
+	return nil
+}
+
 // Close I2C-connection.
 func (o *Options) Close() error {
 	return o.rc.Close()
 }
 
 func ioctl(fd, cmd, arg uintptr) error {
-	_, _, err := syscall.Syscall6(syscall.SYS_IOCTL, fd, cmd, arg, 0, 0, 0)
-	if err != 0 {
+	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, fd, cmd, arg, 0, 0, 0); err != 0 {
 		return err
 	}
 	return nil
