@@ -1,10 +1,12 @@
+//go:build !cgo
 // +build !cgo
+
 package i2c
 
 // uncoment if use hard-coded value for system I2C_SLAVE
 // constant, if OS not Linux or CGO disabled.
 // This is not a good approach, but
 // can be used as a last resort.
-/*const (
+const (
 	I2C_SLAVE = 0x0703
-)*/
+)
