@@ -2,7 +2,7 @@
 //
 // Before usage you should load the i2c-dev kernel module
 //
-//      sudo modprobe i2c-dev
+//	sudo modprobe i2c-dev
 //
 // Each i2c bus can address 127 independent i2c devices, and most
 // Linux systems contain several buses.
@@ -154,6 +154,22 @@ func (o *Options) ReadRegS16LE(reg byte) (int16, error) {
 	}
 	// exchange bytes
 	w = (w&0xFF)<<8 + w>>8
+	return w, nil
+}
+
+// ReadRegU32BE reads unsigned big endian word (32 bits)
+// from I2C-device starting from address specified in reg.
+func (o *Options) ReadRegU32BE(reg byte) (uint32, error) {
+	if _, err := o.WriteBytes([]byte{reg}); err != nil {
+		return 0, err
+	}
+	buf := make([]byte, 4)
+	if _, err := o.ReadBytes(buf); err != nil {
+		return 0, err
+	}
+	w := uint32(buf[0])<<24 | uint32(buf[1])<<16 |
+		uint32(buf[2])<<8 | uint32(buf[3])
+	o.Log.Debugf("Read U32 %d from reg 0x%0X", w, reg)
 	return w, nil
 }
 
