@@ -182,6 +182,12 @@ func (o *Options) WriteBytes(buf []byte) (int, error) {
 	return o.rc.Write(buf)
 }
 
+// WriteRegBytes send bytes to the remote I2C-device starting from reg address.
+func (o *Options) WriteRegBytes(reg byte, buf []byte) (int, error) {
+	b := append([]byte{reg}, buf...)
+	return o.WriteBytes(b)
+}
+
 // WriteRegU8 writes byte to I2C-device register specified in reg.
 func (o *Options) WriteRegU8(reg byte, value byte) error {
 	buf := []byte{reg, value}
