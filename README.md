@@ -43,7 +43,7 @@ Fork
 Forked from https://github.com/googolgl/go-i2c as this library is unresponsive to [Pull requests](https://github.com/googolgl/go-i2c/pull/3).  Changes in this fork include:
 
 * Added `ReadRegU32BE()` and `WriteRegBytes()` functions.
-
+* Added `WriteThenReadBytes()` function.
 
 
 Tutorial

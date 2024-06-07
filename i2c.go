@@ -11,6 +11,7 @@ package i2c
 import (
 	"os"
 	"syscall"
+	"unsafe"
 )
 
 // Options represents a connection to I2C-device.
@@ -18,6 +19,20 @@ type Options struct {
 	addr uint8
 	dev  string
 	rc   *os.File
+}
+
+// i2c_msg struct represents an I2C message
+type i2c_msg struct {
+	addr  uint16
+	flags uint16
+	len   uint16
+	buf   uintptr
+}
+
+// i2c_rdwr_ioctl_data struct for I2C_RDWR ioctl operation
+type i2c_rdwr_ioctl_data struct {
+	msgs  uintptr
+	nmsgs uint32
 }
 
 // New opens a connection for I2C-device.
@@ -29,11 +44,7 @@ func New(addr uint8, dev string) (*Options, error) {
 
 	i2c := &Options{
 		addr: addr,
-		dev:  "/dev/i2c-0",
-	}
-
-	if dev != "" {
-		i2c.dev = dev
+		dev:  dev,
 	}
 
 	f, err := os.OpenFile(dev, os.O_RDWR, 0600)
@@ -291,6 +302,39 @@ func (v *Options) WriteRegU32BE(reg byte, value uint32) error {
 	return nil
 }
 
+// WriteThenReadBytes sends two I2C messages, the first to write some bytes then
+// the second to read them.  This function allows us to perform a Write then Read
+// without a I2C Stop condition occurring between the two messages which
+// happens if WriteBytes() then ReadBytes() functions were called individually.
+func (o *Options) WriteThenReadBytes(writeBuf, readBuf []byte) (int, int, error) {
+
+	msgs := []i2c_msg{
+		{
+			addr:  uint16(o.addr),
+			flags: 0,
+			len:   uint16(len(writeBuf)),
+			buf:   uintptr(unsafe.Pointer(&writeBuf[0])),
+		},
+		{
+			addr:  uint16(o.addr),
+			flags: I2C_M_RD,
+			len:   uint16(len(readBuf)),
+			buf:   uintptr(unsafe.Pointer(&readBuf[0])),
+		},
+	}
+
+	data := i2c_rdwr_ioctl_data{
+		msgs:  uintptr(unsafe.Pointer(&msgs[0])),
+		nmsgs: uint32(len(msgs)),
+	}
+
+	if err := ioctl(o.rc.Fd(), I2C_RDWR, uintptr(unsafe.Pointer(&data))); err != nil {
+		return 0, 0, err
+	}
+
+	return len(writeBuf), len(readBuf), nil
+}
+
 // Close I2C-connection.
 func (o *Options) Close() error {
 	return o.rc.Close()
@@ -298,7 +342,8 @@ func (o *Options) Close() error {
 
 func ioctl(fd, cmd, arg uintptr) error {
 
-	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, fd, cmd, arg, 0, 0, 0); err != 0 {
+	if _, _, err := syscall.Syscall(syscall.SYS_IOCTL, fd, cmd, arg); err != 0 {
+
 		return err
 	}
 

@@ -9,4 +9,6 @@ package i2c
 // can be used as a last resort.
 const (
 	I2C_SLAVE = 0x0703
+	I2C_M_RD  = 0x0001
+	I2C_RDWR  = 0x0707
 )
