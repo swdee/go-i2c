@@ -14,6 +14,13 @@ import (
 	"unsafe"
 )
 
+const (
+	// constants from C files linux/i2c-dev.h and linux/i2c.h
+	I2C_SLAVE = 0x0703
+	I2C_M_RD  = 0x0001
+	I2C_RDWR  = 0x0707
+)
+
 // Options represents a connection to I2C-device.
 type Options struct {
 	addr uint8
