@@ -3,7 +3,12 @@
 
 package i2c
 
-// #include <linux/i2c-dev.h>
+import "C"
+
+/*
+#include <linux/i2c-dev.h>
+#include <linux/i2c.h>
+*/
 import "C"
 
 // Get I2C_SLAVE constant value from
